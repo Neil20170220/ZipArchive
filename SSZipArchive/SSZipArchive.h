@@ -12,7 +12,7 @@
 #import <Foundation/Foundation.h>
 
 #if COCOAPODS
-#import <SSZipArchive/SSZipCommon.h>
+#import <FRSSZipArchive/SSZipCommon.h>
 #else
 #import <ZipArchive/SSZipCommon.h>
 #endif
