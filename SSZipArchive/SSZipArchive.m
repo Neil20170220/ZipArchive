@@ -992,6 +992,16 @@ UInt64 _fileSize(NSString *path);
         }
         success &= [zipArchive close];
     }
+    
+    if (success) {
+        // is success, try to open it to double check
+        zipFile zip = unzOpen(path.fileSystemRepresentation);
+        if (zip == NULL) {
+            return NO;
+        }
+        unzOpen(zip);
+    }
+    
     return success;
 }
 
