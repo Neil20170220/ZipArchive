@@ -27,17 +27,23 @@ UInt64 _fileSize(NSString *path);
 #define API_AVAILABLE(...)
 #endif
 
-@interface NSData(SSZipArchive)
+@interface NSData (SSZipArchive)
+
 - (NSString *)_base64RFC4648 API_AVAILABLE(macos(10.9), ios(7.0), watchos(2.0), tvos(9.0));
 - (NSString *)_hexString;
+
 @end
 
 @interface NSString (SSZipArchive)
+
 - (NSString *)_sanitizedPath;
+
 @end
 
 @interface SSZipArchive ()
+
 - (instancetype)init NS_DESIGNATED_INITIALIZER;
+
 @end
 
 @implementation SSZipArchive {
@@ -87,7 +93,9 @@ UInt64 _fileSize(NSString *path);
     return passwordProtected;
 }
 
-+ (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path password:(NSString *)pw error:(NSError **)error {
++ (BOOL)isPasswordValidForArchiveAtPath:(NSString *)path
+                               password:(NSString *)pw
+                                  error:(NSError **)error {
     if (error) {
         *error = nil;
     }
@@ -162,7 +170,8 @@ UInt64 _fileSize(NSString *path);
     return passwordValid;
 }
 
-+ (NSNumber *)payloadSizeForArchiveAtPath:(NSString *)path error:(NSError **)error {
++ (NSNumber *)payloadSizeForArchiveAtPath:(NSString *)path
+                                    error:(NSError **)error {
     if (error) {
         *error = nil;
     }
@@ -215,8 +224,11 @@ UInt64 _fileSize(NSString *path);
 
 #pragma mark - Unzipping
 
-+ (BOOL)unzipFileAtPath:(NSString *)path toDestination:(NSString *)destination {
-    return [self unzipFileAtPath:path toDestination:destination delegate:nil];
++ (BOOL)unzipFileAtPath:(NSString *)path
+          toDestination:(NSString *)destination {
+    return [self unzipFileAtPath:path
+                   toDestination:destination
+                        delegate:nil];
 }
 
 + (BOOL)unzipFileAtPath:(NSString *)path
@@ -378,10 +390,6 @@ UInt64 _fileSize(NSString *path);
         return NO;
     }
     
-    NSDictionary *fileAttributes = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
-    unsigned long long fileSize = [[fileAttributes objectForKey:NSFileSize] unsignedLongLongValue];
-    unsigned long long currentPosition = 0;
-    
     unz_global_info globalInfo = {};
     unzGetGlobalInfo(zip, &globalInfo);
     
@@ -413,9 +421,6 @@ UInt64 _fileSize(NSString *path);
     // Message delegate
     if ([delegate respondsToSelector:@selector(zipArchiveWillUnzipArchiveAtPath:zipInfo:)]) {
         [delegate zipArchiveWillUnzipArchiveAtPath:path zipInfo:globalInfo];
-    }
-    if ([delegate respondsToSelector:@selector(zipArchiveProgressEvent:total:)]) {
-        [delegate zipArchiveProgressEvent:currentPosition total:fileSize];
     }
     
     NSInteger currentFileNumber = -1;
@@ -456,8 +461,6 @@ UInt64 _fileSize(NSString *path);
                 break;
             }
             
-            currentPosition += fileInfo.compressed_size;
-            
             // Message delegate
             if ([delegate respondsToSelector:@selector(zipArchiveShouldUnzipFileAtIndex:totalFiles:archivePath:fileInfo:)]) {
                 if (![delegate zipArchiveShouldUnzipFileAtIndex:currentFileNumber
@@ -474,9 +477,6 @@ UInt64 _fileSize(NSString *path);
                                               totalFiles:(NSInteger)globalInfo.number_entry
                                              archivePath:path
                                                 fileInfo:fileInfo];
-            }
-            if ([delegate respondsToSelector:@selector(zipArchiveProgressEvent:total:)]) {
-                [delegate zipArchiveProgressEvent:(NSInteger)currentPosition total:(NSInteger)fileSize];
             }
             
             char *filename = (char *)malloc(fileInfo.size_filename + 1);
@@ -573,7 +573,9 @@ UInt64 _fileSize(NSString *path);
                                     NSString *message = [NSString stringWithFormat:@"Failed to write file (check your free space)"];
                                     NSLog(@"[SSZipArchive] %@", message);
                                     success = NO;
-                                    unzippingError = [NSError errorWithDomain:@"SSZipArchiveErrorDomain" code:SSZipArchiveErrorCodeFailedToWriteFile userInfo:@{NSLocalizedDescriptionKey: message}];
+                                    unzippingError = [NSError errorWithDomain:@"SSZipArchiveErrorDomain"
+                                                                         code:SSZipArchiveErrorCodeFailedToWriteFile
+                                                                     userInfo:@{NSLocalizedDescriptionKey: message}];
                                     break;
                                 }
                             }
@@ -732,7 +734,9 @@ UInt64 _fileSize(NSString *path);
                             NSString *message = [NSString stringWithFormat:@"Failed to delete existing symbolic link at \"%@\"", localError.localizedDescription];
                             NSLog(@"[SSZipArchive] %@", message);
                             success = NO;
-                            unzippingError = [NSError errorWithDomain:SSZipArchiveErrorDomain code:localError.code userInfo:@{NSLocalizedDescriptionKey: message}];
+                            unzippingError = [NSError errorWithDomain:SSZipArchiveErrorDomain
+                                                                 code:localError.code
+                                                             userInfo:@{NSLocalizedDescriptionKey: message}];
                         }
                     }
                 }
@@ -746,7 +750,9 @@ UInt64 _fileSize(NSString *path);
                     NSString *message = [NSString stringWithFormat:@"Failed to create symbolic link at \"%@\" to \"%@\" - symlink() error code: %d", fullPath, destinationPath, errno];
                     NSLog(@"[SSZipArchive] %@", message);
                     success = NO;
-                    unzippingError = [NSError errorWithDomain:NSPOSIXErrorDomain code:symlinkError userInfo:@{NSLocalizedDescriptionKey: message}];
+                    unzippingError = [NSError errorWithDomain:NSPOSIXErrorDomain
+                                                         code:symlinkError
+                                                     userInfo:@{NSLocalizedDescriptionKey: message}];
                 }
             }
             
@@ -798,10 +804,6 @@ UInt64 _fileSize(NSString *path);
     if (success && [delegate respondsToSelector:@selector(zipArchiveDidUnzipArchiveAtPath:zipInfo:unzippedPath:)]) {
         [delegate zipArchiveDidUnzipArchiveAtPath:path zipInfo:globalInfo unzippedPath:destination];
     }
-    // final progress event = 100%
-    if (!canceled && [delegate respondsToSelector:@selector(zipArchiveProgressEvent:total:)]) {
-        [delegate zipArchiveProgressEvent:fileSize total:fileSize];
-    }
     
     NSError *retErr = nil;
     if (crc_ret == MZ_CRC_ERROR) {
@@ -827,24 +829,42 @@ UInt64 _fileSize(NSString *path);
 }
 
 #pragma mark - Zipping
-+ (BOOL)createZipFileAtPath:(NSString *)path withFilesAtPaths:(NSArray<NSString *> *)paths
-{
-    return [SSZipArchive createZipFileAtPath:path withFilesAtPaths:paths withPassword:nil];
-}
-+ (BOOL)createZipFileAtPath:(NSString *)path withContentsOfDirectory:(NSString *)directoryPath {
-    return [SSZipArchive createZipFileAtPath:path withContentsOfDirectory:directoryPath withPassword:nil];
-}
-
-+ (BOOL)createZipFileAtPath:(NSString *)path withContentsOfDirectory:(NSString *)directoryPath keepParentDirectory:(BOOL)keepParentDirectory {
-    return [SSZipArchive createZipFileAtPath:path withContentsOfDirectory:directoryPath keepParentDirectory:keepParentDirectory withPassword:nil];
++ (BOOL)createZipFileAtPath:(NSString *)path
+           withFilesAtPaths:(NSArray<NSString *> *)paths {
+    return [SSZipArchive createZipFileAtPath:path
+                            withFilesAtPaths:paths
+                                withPassword:nil];
 }
 
-+ (BOOL)createZipFileAtPath:(NSString *)path withFilesAtPaths:(NSArray<NSString *> *)paths withPassword:(NSString *)password {
-    return [self createZipFileAtPath:path withFilesAtPaths:paths withPassword:password progressHandler:nil];
++ (BOOL)createZipFileAtPath:(NSString *)path
+    withContentsOfDirectory:(NSString *)directoryPath {
+    return [SSZipArchive createZipFileAtPath:path
+                     withContentsOfDirectory:directoryPath
+                                withPassword:nil];
 }
 
-+ (BOOL)createZipFileAtPath:(NSString *)path withFilesAtPaths:(NSArray<NSString *> *)paths withPassword:(NSString *)password progressHandler:(void(^ _Nullable)(NSUInteger entryNumber, NSUInteger total))progressHandler
-{
++ (BOOL)createZipFileAtPath:(NSString *)path
+    withContentsOfDirectory:(NSString *)directoryPath
+        keepParentDirectory:(BOOL)keepParentDirectory {
+    return [SSZipArchive createZipFileAtPath:path
+                     withContentsOfDirectory:directoryPath
+                         keepParentDirectory:keepParentDirectory
+                                withPassword:nil];
+}
+
++ (BOOL)createZipFileAtPath:(NSString *)path
+           withFilesAtPaths:(NSArray<NSString *> *)paths
+               withPassword:(NSString *)password {
+    return [self createZipFileAtPath:path
+                    withFilesAtPaths:paths
+                        withPassword:password
+                     progressHandler:nil];
+}
+
++ (BOOL)createZipFileAtPath:(NSString *)path
+           withFilesAtPaths:(NSArray<NSString *> *)paths
+               withPassword:(NSString *)password
+            progressHandler:(void (^_Nullable)(NSUInteger entryNumber, NSUInteger total))progressHandler {
     SSZipArchive *zipArchive = [[SSZipArchive alloc] initWithPath:path];
     BOOL success = [zipArchive open];
     if (success) {
@@ -879,8 +899,7 @@ UInt64 _fileSize(NSString *path);
                      withContentsOfDirectory:directoryPath
                          keepParentDirectory:keepParentDirectory
                                 withPassword:password
-                          andProgressHandler:nil
-            ];
+                          andProgressHandler:nil];
 }
 
 + (BOOL)createZipFileAtPath:(NSString *)path
@@ -931,7 +950,7 @@ UInt64 _fileSize(NSString *path);
                 NSLog(@"[SSZipArchive] the archive path and the file path: %@ are the same, which is forbidden.", fullFilePath);
                 continue;
             }
-			
+            
             if (keepParentDirectory) {
                 fileName = [directoryPath.lastPathComponent stringByAppendingPathComponent:fileName];
             }
@@ -976,70 +995,26 @@ UInt64 _fileSize(NSString *path);
     return success;
 }
 
-- (BOOL)writeSymlinkFileAtPath:(NSString *)path withFileName:(nullable NSString *)fileName compressionLevel:(int)compressionLevel password:(nullable NSString *)password AES:(BOOL)aes
-{
-    NSAssert((_zip != NULL), @"Attempting to write to an archive which was never opened");
-    //read symlink
-    char link_path[1024];
-    int32_t err = MZ_OK;
-    err = mz_os_read_symlink(path.fileSystemRepresentation, link_path, sizeof(link_path));
-    if (err != MZ_OK) {
-        NSLog(@"[SSZipArchive] Failed to read sylink");
-        return NO;
-    }
-
-    if (!fileName) {
-        fileName = path.lastPathComponent;
-    }
-    
-    zip_fileinfo zipInfo = {};    
-    [SSZipArchive zipInfo:&zipInfo setAttributesOfItemAtPath:path];
-    
-    //unpdate zipInfo.external_fa
-    uint32_t target_attrib = 0;
-    uint32_t src_attrib = 0;
-    uint32_t src_sys = 0;
-    mz_os_get_file_attribs(path.fileSystemRepresentation, &src_attrib);
-    src_sys = MZ_HOST_SYSTEM(MZ_VERSION_MADEBY);
-
-    if ((src_sys != MZ_HOST_SYSTEM_MSDOS) && (src_sys != MZ_HOST_SYSTEM_WINDOWS_NTFS)) {
-        /* High bytes are OS specific attributes, low byte is always DOS attributes */
-        if (mz_zip_attrib_convert(src_sys, src_attrib, MZ_HOST_SYSTEM_MSDOS, &target_attrib) == MZ_OK)
-            zipInfo.external_fa = target_attrib;
-        zipInfo.external_fa |= (src_attrib << 16);
-    } else {
-        zipInfo.external_fa = src_attrib;
-    }
-
-    uint16_t version_madeby = 3 << 8;//UNIX
-    int error = zipOpenNewFileInZip5(_zip, fileName.fileSystemRepresentation, &zipInfo, NULL, 0, NULL, 0, NULL, Z_DEFLATED, compressionLevel, 0, -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, password.UTF8String, aes, version_madeby, 0, 0);
-    zipWriteInFileInZip(_zip, link_path, (uint32_t)strlen(link_path));
-    zipCloseFileInZip(_zip);
-    return error == ZIP_OK;
+// disabling `init` because designated initializer is `initWithPath:`
+- (instancetype)init {
+    @throw nil;
 }
 
-// disabling `init` because designated initializer is `initWithPath:`
-- (instancetype)init { @throw nil; }
-
 // designated initializer
-- (instancetype)initWithPath:(NSString *)path
-{
+- (instancetype)initWithPath:(NSString *)path {
     if ((self = [super init])) {
         _path = [path copy];
     }
     return self;
 }
 
-
-- (BOOL)open
-{
+- (BOOL)open {
     NSAssert((_zip == NULL), @"Attempting to open an archive which is already open");
     _zip = zipOpen(_path.fileSystemRepresentation, APPEND_STATUS_CREATE);
     return (NULL != _zip);
 }
 
-- (BOOL)openForAppending
-{
+- (BOOL)openForAppending {
     NSAssert((_zip == NULL), @"Attempting to open an archive which is already open");
     _zip = zipOpen(_path.fileSystemRepresentation, APPEND_STATUS_ADDINZIP);
     return (NULL != _zip);
@@ -1047,8 +1022,7 @@ UInt64 _fileSize(NSString *path);
 
 - (BOOL)writeFolderAtPath:(NSString *)path
            withFolderName:(NSString *)folderName
-             withPassword:(nullable NSString *)password
-{
+             withPassword:(nullable NSString *)password {
     NSAssert((_zip != NULL), @"Attempting to write to an archive which was never opened");
     
     zip_fileinfo zipInfo = {};
@@ -1063,8 +1037,7 @@ UInt64 _fileSize(NSString *path);
 }
 
 - (BOOL)writeFile:(NSString *)path
-     withPassword:(nullable NSString *)password
-{
+     withPassword:(nullable NSString *)password {
     return [self writeFileAtPath:path
                     withFileName:nil
                     withPassword:password];
@@ -1072,8 +1045,7 @@ UInt64 _fileSize(NSString *path);
 
 - (BOOL)writeFileAtPath:(NSString *)path
            withFileName:(nullable NSString *)fileName
-           withPassword:(nullable NSString *)password
-{
+           withPassword:(nullable NSString *)password {
     return [self writeFileAtPath:path
                     withFileName:fileName
                 compressionLevel:Z_DEFAULT_COMPRESSION
@@ -1096,6 +1068,7 @@ UInt64 _fileSize(NSString *path);
                              AES:aes
                  progressHandler:nil];
 }
+
 - (BOOL)writeFileAtPath:(NSString *)path
            withFileName:(nullable NSString *)fileName
        compressionLevel:(int)compressionLevel
@@ -1129,7 +1102,7 @@ UInt64 _fileSize(NSString *path);
     UInt64 zipedBytes = 0;
     BOOL keepOn = YES;
     while (keepOn && !feof(input) && !ferror(input)) {
-        unsigned int len = (unsigned int) fread(buffer, 1, CHUNK, input);
+        unsigned int len = (unsigned int)fread(buffer, 1, CHUNK, input);
         zipWriteInFileInZip(_zip, buffer, len);
         zipedBytes += len;
         if (progressHandler) {
@@ -1187,29 +1160,22 @@ UInt64 _fileSize(NSString *path);
 + (NSString *)_filenameStringWithCString:(const char *)filename
                                     size:(uint16_t)size_filename {
     // attempting unicode encoding
-    NSString * strPath = @(filename);
+    NSString *strPath = @(filename);
     if (strPath) {
         return strPath;
     }
     
     // if filename is non-unicode, detect and transform Encoding
     NSData *data = [NSData dataWithBytes:(const void *)filename length:sizeof(unsigned char) * size_filename];
-    // Testing availability of @available (https://stackoverflow.com/a/46927445/1033581)
-#if __clang_major__ < 9
-    // Xcode 8-
-    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber10_9_2) {
-#else
-    // Xcode 9+
     if (@available(macOS 10.10, iOS 8.0, watchOS 2.0, tvOS 9.0, *)) {
-#endif
         // supported encodings are in [NSString availableStringEncodings]
         BOOL isloss = NO;
         NSStringEncoding encGB_18030_2000 = CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingGB_18030_2000);
         NSStringEncoding encShiftJIS = CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingShiftJIS);
         NSStringEncoding encDOSLatinUS = CFStringConvertEncodingToNSStringEncoding(kCFStringEncodingDOSLatinUS);
-        NSArray * encList = @[@(encGB_18030_2000), @(encShiftJIS), @(encDOSLatinUS)];
+        NSArray *encList = @[@(encGB_18030_2000), @(encShiftJIS), @(encDOSLatinUS)];
         [NSString stringEncodingForData:data
-                        encodingOptions:@{NSStringEncodingDetectionSuggestedEncodingsKey:encList}
+                        encodingOptions:@{NSStringEncodingDetectionSuggestedEncodingsKey: encList}
                         convertedString:&strPath
                     usedLossyConversion:&isloss];
     } else {
@@ -1233,7 +1199,7 @@ UInt64 _fileSize(NSString *path);
 }
 
 + (void)zipInfo:(zip_fileinfo *)zipInfo setAttributesOfItemAtPath:(NSString *)path {
-    NSDictionary *attr = [[NSFileManager defaultManager] attributesOfItemAtPath:path error: nil];
+    NSDictionary *attr = [[NSFileManager defaultManager] attributesOfItemAtPath:path error:nil];
     if (attr) {
         NSDate *fileDate = (NSDate *)[attr objectForKey:NSFileModificationDate];
         if (fileDate) {
@@ -1261,7 +1227,8 @@ UInt64 _fileSize(NSString *path);
     }
 }
 
-+ (void)zipInfo:(zip_fileinfo *)zipInfo setDate:(NSDate *)date {
++ (void)zipInfo:(zip_fileinfo *)zipInfo
+        setDate:(NSDate *)date {
     NSCalendar *currentCalendar = SSZipArchive._gregorian;
     NSCalendarUnit flags = NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond;
     NSDateComponents *components = [currentCalendar components:flags fromDate:date];
@@ -1321,12 +1288,34 @@ UInt64 _fileSize(NSString *path);
 
 @end
 
-int _zipOpenEntry(zipFile entry, NSString *name, const zip_fileinfo *zipfi, int level, NSString *password, BOOL aes) {
+int _zipOpenEntry(zipFile entry,
+                  NSString *name,
+                  const zip_fileinfo *zipfi,
+                  int level,
+                  NSString *password,
+                  BOOL aes) {
     // https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT
     uint16_t made_on_darwin = 19 << 8;
     //MZ_ZIP_FLAG_UTF8
     uint16_t flag_base = 1 << 11;
-    return zipOpenNewFileInZip5(entry, name.fileSystemRepresentation, zipfi, NULL, 0, NULL, 0, NULL, Z_DEFLATED, level, 0, -MAX_WBITS, DEF_MEM_LEVEL, Z_DEFAULT_STRATEGY, password.UTF8String, aes, made_on_darwin, flag_base, 1);
+    return zipOpenNewFileInZip5(entry,
+                                name.fileSystemRepresentation,
+                                zipfi,
+                                NULL,
+                                0,
+                                NULL,
+                                0,
+                                NULL,
+                                Z_DEFLATED,
+                                level,
+                                0,
+                                -MAX_WBITS,
+                                DEF_MEM_LEVEL,
+                                Z_DEFAULT_STRATEGY,
+                                password.UTF8String,
+                                aes,
+                                made_on_darwin,
+                                flag_base, 1);
 }
 
 #pragma mark - Private tools for file info
@@ -1350,7 +1339,7 @@ BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo) {
     BOOL fileIsSymbolicLink = ((fileInfo->version >> 8) == ZipUNIXVersion) && BSD_IFLNK == (BSD_SFMT & (fileInfo->external_fa >> 16));
     return fileIsSymbolicLink;
 }
-    
+
 BOOL _isDirecotry(NSString *path) {
     BOOL isDirectory = NO;
     BOOL exist = [NSFileManager.defaultManager fileExistsAtPath:path isDirectory:&isDirectory];
@@ -1430,14 +1419,7 @@ UInt64 _fileSize(NSString *path) {
 #if (__MAC_OS_X_VERSION_MIN_REQUIRED >= 1090 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 70000 || __WATCH_OS_VERSION_MIN_REQUIRED >= 20000 || __TV_OS_VERSION_MIN_REQUIRED >= 90000)
     strPath = [strPath stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet];
 #else
-    // Testing availability of @available (https://stackoverflow.com/a/46927445/1033581)
-#if __clang_major__ < 9
-    // Xcode 8-
-    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber10_8_4) {
-#else
-    // Xcode 9+
     if (@available(macOS 10.9, iOS 7.0, watchOS 2.0, tvOS 9.0, *)) {
-#endif
         strPath = [strPath stringByAddingPercentEncodingWithAllowedCharacters:NSCharacterSet.URLPathAllowedCharacterSet];
     } else {
         strPath = [strPath stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
@@ -1467,14 +1449,7 @@ UInt64 _fileSize(NSString *path) {
 #if (__MAC_OS_X_VERSION_MIN_REQUIRED >= 1090 || __IPHONE_OS_VERSION_MIN_REQUIRED >= 70000 || __WATCH_OS_VERSION_MIN_REQUIRED >= 20000 || __TV_OS_VERSION_MIN_REQUIRED >= 90000)
     strPath = strPath.stringByRemovingPercentEncoding;
 #else
-    // Testing availability of @available (https://stackoverflow.com/a/46927445/1033581)
-#if __clang_major__ < 9
-    // Xcode 8-
-    if (floor(NSFoundationVersionNumber) > NSFoundationVersionNumber10_8_4) {
-#else
-    // Xcode 9+
     if (@available(macOS 10.9, iOS 7.0, watchOS 2.0, tvOS 9.0, *)) {
-#endif
         strPath = strPath.stringByRemovingPercentEncoding;
     } else {
         strPath = [strPath stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
