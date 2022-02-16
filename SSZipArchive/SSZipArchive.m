@@ -995,11 +995,11 @@ UInt64 _fileSize(NSString *path);
     
     if (success) {
         // is success, try to open it to double check
-        zipFile zip = unzOpen(path.fileSystemRepresentation);
-        if (zip == NULL) {
+        NSError *error = nil;
+        [self payloadSizeForArchiveAtPath:path error:&error];
+        if (error) {
             return NO;
         }
-        unzOpen(zip);
     }
     
     return success;
