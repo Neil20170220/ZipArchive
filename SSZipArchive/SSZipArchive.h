@@ -25,7 +25,7 @@ typedef NS_ENUM(NSInteger, SSZipArchiveErrorCode) {
 };
 
 typedef BOOL(^SSZipArchiveUnzipProgressBlock)(NSString *entry,
-                                              unz_file_info zipInfo,
+                                              unz_file_info64 zipInfo,
                                               UInt64 totalBytesRead,
                                               UInt64 totalBytesUncompressed);
 
@@ -202,26 +202,26 @@ typedef BOOL(^SSZipArchiveZipProgressBlock)(UInt64 zipedBytes, UInt64 totalBytes
 @optional
 
 - (void)zipArchiveWillUnzipArchiveAtPath:(NSString *)path
-                                 zipInfo:(unz_global_info)zipInfo;
+                                 zipInfo:(unz_global_info64)zipInfo;
 
 - (void)zipArchiveDidUnzipArchiveAtPath:(NSString *)path
-                                zipInfo:(unz_global_info)zipInfo
+                                zipInfo:(unz_global_info64)zipInfo
                            unzippedPath:(NSString *)unzippedPath;
 
 - (BOOL)zipArchiveShouldUnzipFileAtIndex:(NSInteger)fileIndex
                               totalFiles:(NSInteger)totalFiles
                              archivePath:(NSString *)archivePath
-                                fileInfo:(unz_file_info)fileInfo;
+                                fileInfo:(unz_file_info64)fileInfo;
 
 - (void)zipArchiveWillUnzipFileAtIndex:(NSInteger)fileIndex
                             totalFiles:(NSInteger)totalFiles
                            archivePath:(NSString *)archivePath
-                              fileInfo:(unz_file_info)fileInfo;
+                              fileInfo:(unz_file_info64)fileInfo;
 
 - (void)zipArchiveDidUnzipFileAtIndex:(NSInteger)fileIndex
                            totalFiles:(NSInteger)totalFiles
                           archivePath:(NSString *)archivePath
-                             fileInfo:(unz_file_info)fileInfo;
+                             fileInfo:(unz_file_info64)fileInfo;
 
 - (void)zipArchiveDidUnzipFileAtIndex:(NSInteger)fileIndex
                            totalFiles:(NSInteger)totalFiles

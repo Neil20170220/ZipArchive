@@ -17,7 +17,7 @@ NSString *const SSZipArchiveErrorDomain = @"SSZipArchiveErrorDomain";
 #define CHUNK 16384
 
 int _zipOpenEntry(zipFile entry, NSString *name, const zip_fileinfo *zipfi, int level, NSString *password, BOOL aes);
-BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo);
+BOOL _fileIsSymbolicLink(const unz_file_info64 *fileInfo);
 BOOL _isDirecotry(NSString *path);
 BOOL _isFile(NSString *path);
 UInt64 _fileSize(NSString *path);
@@ -75,8 +75,8 @@ UInt64 _fileSize(NSString *path);
                 }
                 break;
             }
-            unz_file_info fileInfo = {};
-            ret = unzGetCurrentFileInfo(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
+            unz_file_info64 fileInfo = {};
+            ret = unzGetCurrentFileInfo64(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
             unzCloseCurrentFile(zip);
             if (ret != UNZ_OK) {
                 break;
@@ -131,8 +131,8 @@ UInt64 _fileSize(NSString *path);
                 passwordValid = NO;
                 break;
             }
-            unz_file_info fileInfo = {};
-            ret = unzGetCurrentFileInfo(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
+            unz_file_info64 fileInfo = {};
+            ret = unzGetCurrentFileInfo64(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
             if (ret != UNZ_OK) {
                 if (error) {
                     *error = [NSError errorWithDomain:SSZipArchiveErrorDomain
@@ -186,7 +186,7 @@ UInt64 _fileSize(NSString *path);
         return @0;
     }
     
-    unsigned long long totalSize = 0;
+    uint64_t totalSize = 0;
     int ret = unzGoToFirstFile(zip);
     if (ret == UNZ_OK) {
         do {
@@ -199,8 +199,8 @@ UInt64 _fileSize(NSString *path);
                 }
                 break;
             }
-            unz_file_info fileInfo = {};
-            ret = unzGetCurrentFileInfo(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
+            unz_file_info64 fileInfo = {};
+            ret = unzGetCurrentFileInfo64(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
             if (ret != UNZ_OK) {
                 if (error) {
                     *error = [NSError errorWithDomain:SSZipArchiveErrorDomain
@@ -390,8 +390,8 @@ UInt64 _fileSize(NSString *path);
         return NO;
     }
     
-    unz_global_info globalInfo = {};
-    unzGetGlobalInfo(zip, &globalInfo);
+    unz_global_info64 globalInfo = {};
+    unzGetGlobalInfo64(zip, &globalInfo);
     
     // Begin unzipping
     int ret = 0;
@@ -448,10 +448,10 @@ UInt64 _fileSize(NSString *path);
             }
             
             // Reading data and write to file
-            unz_file_info fileInfo;
+            unz_file_info64 fileInfo;
             memset(&fileInfo, 0, sizeof(unz_file_info));
             
-            ret = unzGetCurrentFileInfo(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
+            ret = unzGetCurrentFileInfo64(zip, &fileInfo, NULL, 0, NULL, 0, NULL, 0);
             if (ret != UNZ_OK) {
                 unzippingError = [NSError errorWithDomain:@"SSZipArchiveErrorDomain"
                                                      code:SSZipArchiveErrorCodeFileInfoNotLoadable
@@ -485,7 +485,7 @@ UInt64 _fileSize(NSString *path);
                 break;
             }
             
-            unzGetCurrentFileInfo(zip, &fileInfo, filename, fileInfo.size_filename + 1, NULL, 0, NULL, 0);
+            unzGetCurrentFileInfo64(zip, &fileInfo, filename, fileInfo.size_filename + 1, NULL, 0, NULL, 0);
             filename[fileInfo.size_filename] = '\0';
             
             BOOL fileIsSymbolicLink = _fileIsSymbolicLink(&fileInfo);
@@ -1330,7 +1330,7 @@ int _zipOpenEntry(zipFile entry,
 
 #pragma mark - Private tools for file info
 
-BOOL _fileIsSymbolicLink(const unz_file_info *fileInfo) {
+BOOL _fileIsSymbolicLink(const unz_file_info64 *fileInfo) {
     //
     // Determine whether this is a symbolic link:
     // - File is stored with 'version made by' value of UNIX (3),
