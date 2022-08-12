@@ -141,24 +141,27 @@ UInt64 _fileSize(NSString *path);
                 }
                 passwordValid = NO;
                 break;
-            } else if ((fileInfo.flag & 1) == 1) {
-                unsigned char buffer[10] = {0};
-                int readBytes = unzReadCurrentFile(zip, buffer, (unsigned)MIN(10UL, fileInfo.uncompressed_size));
-                if (readBytes < 0) {
-                    // Let's assume error Z_DATA_ERROR is caused by an invalid password
-                    // Let's assume other errors are caused by Content Not Readable
-                    if (readBytes != Z_DATA_ERROR) {
-                        if (error) {
-                            *error = [NSError errorWithDomain:SSZipArchiveErrorDomain
-                                                         code:SSZipArchiveErrorCodeFileContentNotReadable
-                                                     userInfo:@{NSLocalizedDescriptionKey: @"failed to read contents of file entry"}];
+            } else if ((fileInfo.flag & MZ_ZIP_FLAG_ENCRYPTED) == 1) {
+                // If fileInfo.uncompressed_size == 0, unzReadCurrentFile() will return 102: `MZ_PARAM_ERROR`
+                if (fileInfo.uncompressed_size > 0) {
+                    unsigned char buffer[10] = {0};
+                    int readBytes = unzReadCurrentFile(zip, buffer, (unsigned)MIN(10UL, fileInfo.uncompressed_size));
+                    if (readBytes < 0) {
+                        // Let's assume error Z_DATA_ERROR is caused by an invalid password
+                        // Let's assume other errors are caused by Content Not Readable
+                        if (readBytes != Z_DATA_ERROR) {
+                            if (error) {
+                                *error = [NSError errorWithDomain:SSZipArchiveErrorDomain
+                                                             code:SSZipArchiveErrorCodeFileContentNotReadable
+                                                         userInfo:@{NSLocalizedDescriptionKey: @"failed to read contents of file entry"}];
+                            }
                         }
+                        passwordValid = NO;
+                        break;
                     }
-                    passwordValid = NO;
+                    passwordValid = YES;
                     break;
                 }
-                passwordValid = YES;
-                break;
             }
             
             unzCloseCurrentFile(zip);
